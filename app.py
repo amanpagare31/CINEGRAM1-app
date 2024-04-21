@@ -6,8 +6,8 @@ movies = pickle.load(open("movies_list.pkl", 'rb'))
 similarity = pickle.load(open("similarity.pkl", 'rb'))
 movies_list = movies['title'].values
 
-API_KEY = '48800aee0ea8f4ab2acd3ca475c368d9'
-BASE_URL = "https://api.themoviedb.org/3"
+API_KEY = 'dee0eef3'  # Replace 'dee0eef3' with your OMDb API key
+BASE_URL = "http://www.omdbapi.com"
 
 # function to recommend similar movies
 def recommend(movie):
@@ -18,12 +18,13 @@ def recommend(movie):
         recommend_movie.append(movies.iloc[i[0]].title)
     return recommend_movie
 
-# Function to fetch movie details 
-def fetch_movie_details(movie_id):
-    url = f"{BASE_URL}/movie/{movie_id}"
+# Function to fetch movie details using OMDb API
+def fetch_movie_details(movie_name):
+    url = f"{BASE_URL}/"
     params = {
-        'api_key': API_KEY,
-        'append_to_response': 'credits'  
+        'apikey': API_KEY,
+        't': movie_name,
+        'plot': 'full'  
     }
     response = requests.get(url, params=params)
     movie_data = response.json()
@@ -76,26 +77,15 @@ if st.button("Show recommend"):
     movie_names = recommend(selectvalue)
     cols = st.columns(5)  
     for idx, movie_name in enumerate(movie_names):
-        url = f"{BASE_URL}/search/movie"
-        params = {
-            'api_key': API_KEY,
-            'query': movie_name
-        }
-        response = requests.get(url, params=params)
-        data = response.json()
-        if 'results' in data and len(data['results']) > 0:
-            movie_info = data['results'][0]
-            poster_path = movie_info['poster_path']
-            movie_id = movie_info['id']
-            if poster_path:
-                movie_data = fetch_movie_details(movie_id)
-                poster_url = f"https://image.tmdb.org/t/p/original{poster_path}"
-                movie_link = f"https://www.themoviedb.org/movie/{movie_id}"
-                overview = movie_data['overview']
-                rating = movie_data['vote_average']
-                cast = ", ".join(actor['name'] for actor in movie_data['credits']['cast'][:5])  # Get first 5 cast members
-                cols[idx].image(poster_url, caption=movie_name, use_column_width=True)
-                cols[idx].markdown(f"**Overview:** {overview}\n\n"
-                                   f"**Rating:** {rating}\n\n"
-                                   f"**Cast:** {cast}\n\n"
-                                   f"[{movie_name} on TMDb]({movie_link})", unsafe_allow_html=True)
+        movie_data = fetch_movie_details(movie_name)
+        if 'Error' not in movie_data:
+            poster_url = movie_data['Poster']
+            movie_link = f"https://www.imdb.com/title/{movie_data['imdbID']}"
+            overview = movie_data['Plot']
+            rating = movie_data['imdbRating']
+            cast = movie_data['Actors']
+            cols[idx].image(poster_url, caption=movie_name, use_column_width=True)
+            cols[idx].markdown(f"**Overview:** {overview}\n\n"
+                               f"**Rating:** {rating}\n\n"
+                               f"**Cast:** {cast}\n\n"
+                               f"[{movie_name} on IMDb]({movie_link})", unsafe_allow_html=True)
